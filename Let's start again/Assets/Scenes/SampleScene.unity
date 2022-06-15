@@ -267,3 +267,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mat: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   sprite: {fileID: 21300000, guid: ec7938c03150e4b458463e9d938cee78, type: 3}
+  showRooms: 1
