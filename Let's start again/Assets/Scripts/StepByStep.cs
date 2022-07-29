@@ -163,7 +163,8 @@ public class StepByStep : MonoBehaviour
                         nodes.Add(theRoom);
                     }
 
-                    left.SetConnection(FindAllRooms(hallway), hallway, nodes);
+                    int index = FindAllRooms(hallway);
+                    left.SetConnection(index, hallway, nodes);
 
                 }
                 else if (sizesL.y != sizesR.y)
@@ -178,7 +179,8 @@ public class StepByStep : MonoBehaviour
                         nodes.Add(theRoom);
                     }
 
-                    left.SetConnection(FindAllRooms(hallway), hallway, nodes);
+                    int index = FindAllRooms(hallway);
+                    left.SetConnection(index, hallway, nodes);
 
                 }
             }
@@ -187,7 +189,8 @@ public class StepByStep : MonoBehaviour
                 Node.Hallways hallway = new Node.Hallways();
                 hallway.Add(new RectInt(sizesL.width / 2 + sizesL.x, sizesL.height / 2 + sizesL.y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)), nodes.IndexOf(left));
 
-                left.SetConnection(FindAllRooms(hallway), hallway, nodes);
+                int index = FindAllRooms(hallway);
+                if(index != nodes.IndexOf(left)) left.SetConnection(index, hallway, nodes);
 
                 List<RectInt> halls = hallway.Get();
                 hallway.Add(new RectInt(halls[0].x, halls[0].y + halls[0].height - 1, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
@@ -209,7 +212,8 @@ public class StepByStep : MonoBehaviour
                 Node.Hallways hallway = new Node.Hallways();
                 hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1), nodes.IndexOf(left));
 
-                left.SetConnection(FindAllRooms(hallway), hallway, nodes);
+                int index = FindAllRooms(hallway);
+                if (index != nodes.IndexOf(left)) left.SetConnection(index, hallway, nodes);
 
                 List<RectInt> halls = hallway.Get();
                 hallway.Add(new RectInt(halls[0].x + halls[0].width - 1, halls[0].y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)));
@@ -373,7 +377,7 @@ class Node
         {
             connections.Add(index, hall);
 
-            if (nodes != null) nodes[index].SetConnection(index, hall);
+            if (nodes != null) nodes[index].SetConnection(nodes.IndexOf(this), hall);
         }
     }
     public RectInt GetParam(bool room = false) => (room ? transformRoom : transform);
