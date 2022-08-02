@@ -1,20 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class StepByStep : MonoBehaviour
 {
-    
-    List <Node> nodes = new List <Node>();
+    public Tile tile;
+    readonly List<Node> nodes = new List<Node>();
     public Material mat;
     public Sprite sprite;
     const int MIN = 7;
-    int iteration = 5;
+    const int iteration = 5;
     Node parent;
     public bool showRooms = true;
     RectInt safeRoom = new RectInt();
+    public Tilemap map;
 
-    int exception = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -28,22 +29,22 @@ public class StepByStep : MonoBehaviour
         CreateCorridors(parent, true);
         for(int i = 0; i < nodes.Count; i++)
         {
-            GameObject plate = new GameObject();
-            Vector3 position = plate.transform.position;
-            position.x = nodes[i].GetParam(showRooms).x; 
-            position.y = nodes[i].GetParam(showRooms).y;
-            position.z = -10;
+            //GameObject plate = new GameObject();
+            //Vector3 position = plate.transform.position;
+            //position.x = nodes[i].GetParam(showRooms).x; 
+            //position.y = nodes[i].GetParam(showRooms).y;
+            //position.z = -10;
             
-            plate.transform.position = position;
+            //plate.transform.position = position;
 
-            Vector2 scale = plate.transform.localScale;
-            scale.x = nodes[i].GetParam(showRooms).width;
-            scale.y = nodes[i].GetParam(showRooms).height;
-            plate.transform.localScale = scale;
+            //Vector2 scale = plate.transform.localScale;
+            //scale.x = nodes[i].GetParam(showRooms).width;
+            //scale.y = nodes[i].GetParam(showRooms).height;
+            //plate.transform.localScale = scale;
 
-            SpriteRenderer rend = plate.AddComponent(typeof(SpriteRenderer)) as SpriteRenderer;
-            rend.material = mat;
-            rend.sprite = sprite;
+            //SpriteRenderer rend = plate.AddComponent(typeof(SpriteRenderer)) as SpriteRenderer;
+            //rend.material = mat;
+            //rend.sprite = sprite;
             Hashtable halls = nodes[i].GetConnections();
             Node.Hallways[] hallwaysList = new Node.Hallways[halls.Values.Count];
             halls.Values.CopyTo(hallwaysList, 0);
@@ -73,11 +74,6 @@ public class StepByStep : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
     void Split(int iterations, Node node)
     {
         RectInt sizes = node.GetParam(false);
@@ -140,6 +136,7 @@ public class StepByStep : MonoBehaviour
         int randH = (int) (randY * Random.Range(1f, 2f));
         //randH = randH < sizes.height / 10 ? sizes.height - 2 : randH;
         node.SetParam(new RectInt(sizes.x + randX, sizes.y + randY, (sizes.width - 4 < 4 ? 4 : (sizes.width - 4 > randW ? sizes.width - randW : sizes.width - 4)), (sizes.height - 4 < 4 ? 4 : (sizes.height - 4 > randH ? sizes.height - randH : sizes.height - 4))), true);
+        RenderRoom(node);
     }
     void CreateCorridors(Node node, bool sR = false)
     {
@@ -163,6 +160,7 @@ public class StepByStep : MonoBehaviour
                         safeRoom.y = sizesL.y + sizesL.height / 2;
                         nodes[32].SetParam(safeRoom, false);
                         nodes[32].SetParam(safeRoom, true);
+                        RenderRoom(nodes[32]);
                     }
 
                     int index = FindAllRooms(hallway);
@@ -178,6 +176,7 @@ public class StepByStep : MonoBehaviour
                         safeRoom.x = sizesL.x + sizesL.width / 2;
                         nodes[32].SetParam(safeRoom, false);
                         nodes[32].SetParam(safeRoom, true);
+                        RenderRoom(nodes[32]);
                     }
 
                     int index = FindAllRooms(hallway);
@@ -203,6 +202,7 @@ public class StepByStep : MonoBehaviour
                     else if (safeRoom.y == 100500) safeRoom.y = halls[0].y + halls[0].height;
                     nodes[32].SetParam(safeRoom, false);
                     nodes[32].SetParam(safeRoom, true);
+                    RenderRoom(nodes[32]);
                 }
 
                 int connection = FindAllRooms(hallway);
@@ -227,6 +227,7 @@ public class StepByStep : MonoBehaviour
                     else if (safeRoom.y == 100500) safeRoom.y = halls[0].y;
                     nodes[32].SetParam(safeRoom, false);
                     nodes[32].SetParam(safeRoom, true);
+                    RenderRoom(nodes[32]);
                 }
 
                 int connection = FindAllRooms(hallway);
@@ -350,10 +351,21 @@ public class StepByStep : MonoBehaviour
             else return hallway.LastIndex();
         }
     }
+    void RenderRoom(Node node)
+    {
+        RectInt roomPosition = node.GetParam(true);
+        for(int x = roomPosition.x; x < roomPosition.width + roomPosition.x; x++)
+        {
+            for(int y = roomPosition.y; y < roomPosition.height + roomPosition.y; y++)
+            {
+                map.SetTile(new Vector3Int(x, y, 0), tile);
+            }
+        }
+    }
 }
 class Node
 {
-    Hashtable connections = new Hashtable();
+    readonly Hashtable connections = new Hashtable();
     bool isSplit = false;
     RectInt transform;
     RectInt transformRoom;
@@ -384,7 +396,6 @@ class Node
             }
         }
         else return false;
-
     }
     public Hashtable GetConnections() => connections;
     public void SetConnection(int index, Hallways hall, List<Node> nodes = null)
@@ -442,7 +453,7 @@ class Node
         public List<int> GetIndexes() => indexes;
     }
 
-    public static bool operator ==(Vector2 hallway, Node room)
+    public static bool operator ==(Vector2 hallway, Node room) //Переделай в обычный метод
     {
         RectInt size = room.GetParam(false);
         return ((hallway.x >= size.x && hallway.x <= size.x + size.width) && (hallway.y >= size.y && hallway.y <= size.y + size.height));
