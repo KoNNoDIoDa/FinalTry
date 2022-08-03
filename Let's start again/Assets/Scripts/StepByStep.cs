@@ -16,6 +16,18 @@ public class StepByStep : MonoBehaviour
     RectInt safeRoom = new RectInt();
     public Tilemap map;
 
+    public Tile topLeftTile;
+    public Tile topMiddleTile;
+    public Tile topRightTile;
+
+    public Tile middleLeftTile;
+    public Tile middleTile;
+    public Tile middleRightTile;
+
+    public Tile bottomLeftTile;
+    public Tile bottomMiddleTile;
+    public Tile bottomRightTile;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -29,47 +41,35 @@ public class StepByStep : MonoBehaviour
         CreateCorridors(parent, true);
         for(int i = 0; i < nodes.Count; i++)
         {
-            //GameObject plate = new GameObject();
-            //Vector3 position = plate.transform.position;
-            //position.x = nodes[i].GetParam(showRooms).x; 
-            //position.y = nodes[i].GetParam(showRooms).y;
-            //position.z = -10;
-            
-            //plate.transform.position = position;
-
-            //Vector2 scale = plate.transform.localScale;
-            //scale.x = nodes[i].GetParam(showRooms).width;
-            //scale.y = nodes[i].GetParam(showRooms).height;
-            //plate.transform.localScale = scale;
-
-            //SpriteRenderer rend = plate.AddComponent(typeof(SpriteRenderer)) as SpriteRenderer;
-            //rend.material = mat;
-            //rend.sprite = sprite;
             Hashtable halls = nodes[i].GetConnections();
-            Node.Hallways[] hallwaysList = new Node.Hallways[halls.Values.Count];
+            Node.Hallways[][] hallwaysList = new Node.Hallways[halls.Values.Count][];
             halls.Values.CopyTo(hallwaysList, 0);
             for (int x = 0; x < hallwaysList.Length; x++)
             {
-                List<RectInt> hallwayAsRects = hallwaysList[x].Get();
-
-                for (int y = 0; y < hallwayAsRects.Count; y++)
+                for(int z = 0; z < hallwaysList[x].Length; z++)
                 {
-                    
-                    GameObject cor = new GameObject();
-                    Vector2 pos = cor.transform.position;
-                    pos.x = hallwayAsRects[y].x;
-                    pos.y = hallwayAsRects[y].y;
-                    cor.transform.localPosition = pos;
+                    List<RectInt> hallwayAsRects = hallwaysList[x][z].Get();
 
-                    Vector2 sca = cor.transform.localScale;
-                    sca.x = hallwayAsRects[y].width;
-                    sca.y = hallwayAsRects[y].height;
-                    cor.transform.localScale = sca;
+                    for (int y = 0; y < hallwayAsRects.Count; y++)
+                    {
 
-                    SpriteRenderer render = cor.AddComponent(typeof(SpriteRenderer)) as SpriteRenderer;
-                    render.material = mat;
-                    render.sprite = sprite;
+                        GameObject cor = new GameObject();
+                        Vector2 pos = cor.transform.position;
+                        pos.x = hallwayAsRects[y].x;
+                        pos.y = hallwayAsRects[y].y;
+                        cor.transform.localPosition = pos;
+
+                        Vector2 sca = cor.transform.localScale;
+                        sca.x = hallwayAsRects[y].width;
+                        sca.y = hallwayAsRects[y].height;
+                        cor.transform.localScale = sca;
+
+                        SpriteRenderer render = cor.AddComponent(typeof(SpriteRenderer)) as SpriteRenderer;
+                        render.material = mat;
+                        render.sprite = sprite;
+                    }
                 }
+                
             }
         }
     }
@@ -361,6 +361,46 @@ public class StepByStep : MonoBehaviour
                 map.SetTile(new Vector3Int(x, y, 0), tile);
             }
         }
+        SetWalls(node);
+    }
+    void SetWalls(Node node)
+    {
+        RectInt roomPosition = node.GetParam(true);
+        for (int x = roomPosition.x; x < roomPosition.width + roomPosition.x; x++)
+        {
+            for (int y = roomPosition.y; y < roomPosition.height + roomPosition.y; y++)
+            {
+                map.SetTile(new Vector3Int(x, y, 0), CheckTilesAround(new Vector3Int(x, y, 0)));
+            }
+        }
+    }
+    Tile CheckTilesAround(Vector3Int middleTransform)
+    {
+        var middle = map.GetTile(middleTransform);
+        if (middle == null) return null;
+
+        var bottomLeft = map.GetTile(new Vector3Int(middleTransform.x - 1, middleTransform.y-1, 0));
+        var bottomMiddle = map.GetTile(new Vector3Int(middleTransform.x, middleTransform.y - 1, 0));
+        var bottomRight = map.GetTile(new Vector3Int(middleTransform.x + 1, middleTransform.y - 1, 0));
+
+        var middleLeft = map.GetTile(new Vector3Int(middleTransform.x - 1, middleTransform.y, 0));
+        var middleRight = map.GetTile(new Vector3Int(middleTransform.x + 1, middleTransform.y, 0));
+
+        var topLeft = map.GetTile(new Vector3Int(middleTransform.x - 1, middleTransform.y + 1, 0));
+        var topMiddle = map.GetTile(new Vector3Int(middleTransform.x, middleTransform.y + 1, 0));
+        var topRight = map.GetTile(new Vector3Int(middleTransform.x + 1, middleTransform.y + 1, 0));
+
+        if (middleLeft == null && bottomMiddle == null) return bottomLeftTile;
+        if (bottomMiddle == null && middleLeft != null && middleRight != null) return bottomMiddleTile;
+        if (bottomMiddle == null && middleRight == null) return bottomRightTile;
+        
+        if (middleLeft == null && topMiddle != null && bottomMiddle != null) return middleLeftTile;
+        if (middleRight == null && topMiddle != null && bottomMiddle != null) return middleRightTile;
+
+        if (middleLeft == null && topMiddle == null) return topLeftTile;
+        if (topMiddle == null && middleRight != null && middleRight != null) return topMiddleTile;
+        if (topMiddle == null && middleRight == null) return topRightTile;
+        return middleTile;
     }
 }
 class Node
@@ -402,9 +442,27 @@ class Node
     {
         if (!connections.ContainsKey(index))
         {
-            connections.Add(index, hall);
+            Hallways[] halls = { hall };
+            connections.Add(index, halls);
 
             if (nodes != null) nodes[index].SetConnection(nodes.IndexOf(this), hall);
+        }
+        else
+        {
+            Hallways[] hallways = (Hallways[])connections[index];
+            if(hallways.Length > 2)
+            {
+                List<int> indexes = hall.GetIndexes();
+                if(indexes.Count > 2)
+                {
+                    Hallways[] halls = new Hallways[hallways.Length + 1];
+                    hallways.CopyTo(halls, 0);
+                    halls[halls.Length - 1] = hall;
+                    connections.Remove(index);
+                    connections.Add(index, halls);
+                }
+            }
+            
         }
     }
     public RectInt GetParam(bool room = false) => (room ? transformRoom : transform);
