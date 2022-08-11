@@ -41,12 +41,13 @@ public class StepByStep : MonoBehaviour
         CreateCorridors(parent, true);
         for(int i = 0; i < nodes.Count; i++)
         {
+            RenderRoom(nodes[i]);
             Hashtable halls = nodes[i].GetConnections();
             Node.Hallways[][] hallwaysList = new Node.Hallways[halls.Values.Count][];
             halls.Values.CopyTo(hallwaysList, 0);
             for (int x = 0; x < hallwaysList.Length; x++)
             {
-                for(int z = 0; z < hallwaysList[x].Length; z++)
+                for (int z = 0; z < hallwaysList[x].Length; z++)
                 {
                     List<RectInt> hallwayAsRects = hallwaysList[x][z].Get();
 
@@ -54,9 +55,10 @@ public class StepByStep : MonoBehaviour
                     {
 
                         GameObject cor = new GameObject();
-                        Vector2 pos = cor.transform.position;
+                        Vector3 pos = cor.transform.position;
                         pos.x = hallwayAsRects[y].x;
                         pos.y = hallwayAsRects[y].y;
+                        pos.z = 10;
                         cor.transform.localPosition = pos;
 
                         Vector2 sca = cor.transform.localScale;
@@ -69,7 +71,7 @@ public class StepByStep : MonoBehaviour
                         render.sprite = sprite;
                     }
                 }
-                
+
             }
         }
     }
@@ -136,7 +138,7 @@ public class StepByStep : MonoBehaviour
         int randH = (int) (randY * Random.Range(1f, 2f));
         //randH = randH < sizes.height / 10 ? sizes.height - 2 : randH;
         node.SetParam(new RectInt(sizes.x + randX, sizes.y + randY, (sizes.width - 4 < 4 ? 4 : (sizes.width - 4 > randW ? sizes.width - randW : sizes.width - 4)), (sizes.height - 4 < 4 ? 4 : (sizes.height - 4 > randH ? sizes.height - randH : sizes.height - 4))), true);
-        RenderRoom(node);
+        
     }
     void CreateCorridors(Node node, bool sR = false)
     {
@@ -155,6 +157,7 @@ public class StepByStep : MonoBehaviour
                 {
                     Node.Hallways hallway = new Node.Hallways();
                     hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1), nodes.IndexOf(left));
+                    RenderHallway(hallway);
                     if (sR)
                     {
                         safeRoom.y = sizesL.y + sizesL.height / 2;
@@ -171,6 +174,7 @@ public class StepByStep : MonoBehaviour
                 {
                     Node.Hallways hallway = new Node.Hallways();
                     hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)), nodes.IndexOf(left));
+                    RenderHallway(hallway);
                     if (sR)
                     {
                         safeRoom.x = sizesL.x + sizesL.width / 2;
@@ -195,6 +199,7 @@ public class StepByStep : MonoBehaviour
 
                 List<RectInt> halls = hallway.Get();
                 hallway.Add(new RectInt(halls[0].x, halls[0].y + halls[0].height - 1, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
+                RenderHallway(hallway);
 
                 if (sR)
                 {
@@ -220,6 +225,7 @@ public class StepByStep : MonoBehaviour
 
                 List<RectInt> halls = hallway.Get();
                 hallway.Add(new RectInt(halls[0].x + halls[0].width - 1, halls[0].y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)));
+                RenderHallway(hallway);
 
                 if (sR)
                 {
@@ -374,7 +380,7 @@ public class StepByStep : MonoBehaviour
             }
         }
     }
-    Tile CheckTilesAround(Vector3Int middleTransform)
+    Tile CheckTilesAround(Vector3Int middleTransform, int side = 0)
     {
         var middle = map.GetTile(middleTransform);
         if (middle == null) return null;
@@ -390,17 +396,97 @@ public class StepByStep : MonoBehaviour
         var topMiddle = map.GetTile(new Vector3Int(middleTransform.x, middleTransform.y + 1, 0));
         var topRight = map.GetTile(new Vector3Int(middleTransform.x + 1, middleTransform.y + 1, 0));
 
-        if (middleLeft == null && bottomMiddle == null) return bottomLeftTile;
-        if (bottomMiddle == null && middleLeft != null && middleRight != null) return bottomMiddleTile;
-        if (bottomMiddle == null && middleRight == null) return bottomRightTile;
-        
-        if (middleLeft == null && topMiddle != null && bottomMiddle != null) return middleLeftTile;
-        if (middleRight == null && topMiddle != null && bottomMiddle != null) return middleRightTile;
+        if (side == 0 || side == -1)
+        {
+            if (middleLeft == null && bottomMiddle == null) return bottomLeftTile;
+            if (bottomMiddle == null && middleLeft != null && middleRight != null) return bottomMiddleTile;
+            if (bottomMiddle == null && middleRight == null) return bottomRightTile;
 
-        if (middleLeft == null && topMiddle == null) return topLeftTile;
-        if (topMiddle == null && middleRight != null && middleRight != null) return topMiddleTile;
-        if (topMiddle == null && middleRight == null) return topRightTile;
+            if (middleLeft == null && topMiddle != null && bottomMiddle != null) return middleLeftTile;
+        }
+        if(side == 0 || side == 1)
+        {
+            if (middleRight == null && topMiddle != null && bottomMiddle != null) return middleRightTile;
+
+            if (middleLeft == null && topMiddle == null) return topLeftTile;
+            if (topMiddle == null && middleRight != null && middleRight != null) return topMiddleTile;
+            if (topMiddle == null && middleRight == null) return topRightTile;
+        }
         return middleTile;
+    }
+
+    void RenderHallway(Node.Hallways hallway)
+    {
+        List<RectInt> halls = hallway.Get();
+        for(int i = 0; i < halls.Count; i++)
+        {
+            for(int x = halls[i].x; x < halls[i].width + halls[i].x; x++)
+            {
+                for(int y = halls[i].y; y < halls[i].y + halls[i].height; y++)
+                {
+                    map.SetTile(new Vector3Int(x, y, 0), middleTile);
+                }
+            }
+        }
+        for (int i = 0; i < halls.Count; i++)
+        {
+            for (int x = halls[i].x; x < halls[i].width + halls[i].x; x++)
+            {
+                for (int y = halls[i].y; y < halls[i].y + halls[i].height; y++)
+                {
+                    Tile leftTile = CheckTilesAround(new Vector3Int(x, y, 0), -1);
+                    Tile rightTile = CheckTilesAround(new Vector3Int(x, y, 0), 1);
+
+                    if(leftTile != null)
+                    {
+                        if (leftTile == bottomLeftTile)
+                        {
+                            map.SetTile(new Vector3Int(x - 1, y - 1, 0), bottomLeftTile);
+                            map.SetTile(new Vector3Int(x, y - 1, 0), bottomMiddleTile);
+                            map.SetTile(new Vector3Int(x - 1, y, 0), middleLeftTile);
+                        }
+                        else if (leftTile == bottomRightTile)
+                        {
+                            map.SetTile(new Vector3Int(x + 1, y - 1, 0), bottomRightTile);
+                            map.SetTile(new Vector3Int(x, y - 1, 0), bottomMiddleTile);
+                            map.SetTile(new Vector3Int(x + 1, y, 0), middleRightTile);
+                        }
+                        else if (leftTile == bottomMiddleTile)
+                        {
+                            map.SetTile(new Vector3Int(x, y - 1, 0), bottomMiddleTile);
+                        }
+                        else if (leftTile == middleLeftTile)
+                        {
+                            map.SetTile(new Vector3Int(x - 1, y, 0), middleLeftTile);
+                        }
+                    }
+                    if(rightTile != null)
+                    {
+                        if(rightTile == topLeftTile)
+                        {
+                            map.SetTile(new Vector3Int(x - 1, y + 1, 0), topLeftTile);
+                            map.SetTile(new Vector3Int(x, y + 1, 0), topMiddleTile);
+                            map.SetTile(new Vector3Int(x - 1, y, 0), middleLeftTile);
+                        }
+                        if (rightTile == topRightTile)
+                        {
+                            map.SetTile(new Vector3Int(x + 1, y + 1, 0), topRightTile);
+                            map.SetTile(new Vector3Int(x, y + 1, 0), topMiddleTile);
+                            map.SetTile(new Vector3Int(x + 1, y, 0), middleRightTile);
+                        }
+                        if(rightTile == topMiddleTile)
+                        {
+                            map.SetTile(new Vector3Int(x, y + 1, 0), topMiddleTile);
+                        }
+                        if (rightTile == middleRightTile)
+                        {
+                            map.SetTile(new Vector3Int(x + 1, y, 0), middleRightTile);
+                        }
+                    }
+
+                }
+            }
+        }
     }
 }
 class Node
