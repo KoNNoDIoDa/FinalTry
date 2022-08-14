@@ -432,7 +432,6 @@ MonoBehaviour:
   sprite: {fileID: 21300000, guid: ec7938c03150e4b458463e9d938cee78, type: 3}
   showRooms: 1
   map: {fileID: 634795044}
-  allHalls: 1
   topLeftTile: {fileID: 11400000, guid: a845a4e49c4979547bd37846073664ae, type: 2}
   topMiddleTile: {fileID: 11400000, guid: 48d54a57beed0c146bbfaf141aa8e646, type: 2}
   topRightTile: {fileID: 11400000, guid: f012c30bbcf45324aa4d3f8cbd15c277, type: 2}
@@ -442,3 +441,11 @@ MonoBehaviour:
   bottomLeftTile: {fileID: 11400000, guid: 1a80e81a38cf7c3408a98648c148c2a6, type: 2}
   bottomMiddleTile: {fileID: 11400000, guid: 3151927c3f9d82149a927f15d92bdd7a, type: 2}
   bottomRightTile: {fileID: 11400000, guid: 0f3d3db2090d1334c9a8c1fe3e86e89f, type: 2}
+  innerTopRightTile: {fileID: 11400000, guid: edca64817c859a04db2dfb77031721e9, type: 2}
+  innerTopLeftTile: {fileID: 11400000, guid: c129bf46b2f5fd54bbbebfdfcdf03ad0, type: 2}
+  innerBottomLeftTile: {fileID: 11400000, guid: 427b2da8c47e52f45bb45c9d6de29d2f, type: 2}
+  innerBottomRightTile: {fileID: 11400000, guid: cd97b5c62a6d65f4c9abfffa6ab26ebf, type: 2}
+  topDoor: {fileID: 11400000, guid: 52351079b234364408c899478345218a, type: 2}
+  leftDoor: {fileID: 11400000, guid: 4aec613b4b7e305428f2c780980313c4, type: 2}
+  rightDoor: {fileID: 11400000, guid: 8d8cce53af76f3848822dcc987f60910, type: 2}
+  bottomDoor: {fileID: 11400000, guid: 88afa4bf8e9b7864fb45a74869a57d4f, type: 2}

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -28,6 +29,16 @@ public class StepByStep : MonoBehaviour
     public Tile bottomMiddleTile;
     public Tile bottomRightTile;
 
+    public Tile innerTopRightTile;
+    public Tile innerTopLeftTile;
+    public Tile innerBottomLeftTile;
+    public Tile innerBottomRightTile;
+
+    public Tile topDoor;
+    public Tile leftDoor;
+    public Tile rightDoor;
+    public Tile bottomDoor;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -41,12 +52,31 @@ public class StepByStep : MonoBehaviour
         CreateCorridors(parent, true);
         for(int i = 0; i < nodes.Count; i++)
         {
+            List<Vector2Int> doors = nodes[i].GetDoors();
             RenderRoom(nodes[i]);
             Hashtable halls = nodes[i].GetConnections();
             Node.Hallways[][] hallwaysList = new Node.Hallways[halls.Values.Count][];
             halls.Values.CopyTo(hallwaysList, 0);
             for (int x = 0; x < hallwaysList.Length; x++)
             {
+                if(x < doors.Count)
+                {
+                    GameObject door = new GameObject();
+                    Vector3 position = door.transform.position;
+                    position.x = doors[x].x;
+                    position.y = doors[x].y;
+                    position.z = -10;
+                    door.transform.localPosition = position;
+
+                    Vector2 scale = door.transform.localScale;
+                    scale.x = 1;
+                    scale.y = 1;
+                    door.transform.localScale = scale;
+
+                    SpriteRenderer renderD = door.AddComponent(typeof(SpriteRenderer)) as SpriteRenderer;
+                    renderD.material = mat;
+                    renderD.sprite = sprite;
+                }
                 for (int z = 0; z < hallwaysList[x].Length; z++)
                 {
                     List<RectInt> hallwayAsRects = hallwaysList[x][z].Get();
@@ -195,7 +225,7 @@ public class StepByStep : MonoBehaviour
                 hallway.Add(new RectInt(sizesL.width / 2 + sizesL.x, sizesL.height / 2 + sizesL.y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)), nodes.IndexOf(left));
 
                 int index = FindAllRooms(hallway);
-                if(index != nodes.IndexOf(left)) left.SetConnection(index, hallway, nodes);
+                if (index != nodes.IndexOf(left)) left.SetConnection(index, hallway, nodes);
 
                 List<RectInt> halls = hallway.Get();
                 hallway.Add(new RectInt(halls[0].x, halls[0].y + halls[0].height - 1, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
@@ -211,7 +241,7 @@ public class StepByStep : MonoBehaviour
                 }
 
                 int connection = FindAllRooms(hallway);
-                if(connection != hallway.LastIndex()) nodes[hallway.LastIndex()].SetConnection(connection, hallway, nodes);
+                if (connection != hallway.LastIndex()) nodes[hallway.LastIndex()].SetConnection(connection, hallway, nodes);
 
                 
             }
@@ -412,6 +442,13 @@ public class StepByStep : MonoBehaviour
             if (topMiddle == null && middleRight != null && middleRight != null) return topMiddleTile;
             if (topMiddle == null && middleRight == null) return topRightTile;
         }
+        if(side == 0)
+        {
+            if (topLeft == null && topMiddle != null && middleLeft != null) return innerTopLeftTile;
+            if (topRight == null && topMiddle != null && middleRight != null) return innerTopRightTile;
+            if (bottomLeft == null && bottomMiddle != null && middleLeft != null) return innerBottomLeftTile;
+            if (bottomRight == null && bottomMiddle != null && middleRight != null) return innerBottomRightTile;
+        }
         return middleTile;
     }
 
@@ -483,7 +520,6 @@ public class StepByStep : MonoBehaviour
                             map.SetTile(new Vector3Int(x + 1, y, 0), middleRightTile);
                         }
                     }
-
                 }
             }
         }
@@ -495,6 +531,7 @@ class Node
     bool isSplit = false;
     RectInt transform;
     RectInt transformRoom;
+    List<Vector2Int> doors = new List<Vector2Int>();
 
     public Node lChild { get; private set; }
     public Node rChild { get; private set; }
@@ -530,6 +567,7 @@ class Node
         {
             Hallways[] halls = { hall };
             connections.Add(index, halls);
+            AddDoor(hall);
 
             if (nodes != null) nodes[index].SetConnection(nodes.IndexOf(this), hall);
         }
@@ -539,18 +577,37 @@ class Node
             if(hallways.Length > 2)
             {
                 List<int> indexes = hall.GetIndexes();
-                if(indexes.Count > 2)
+                if(indexes.Count < 2)
                 {
                     Hallways[] halls = new Hallways[hallways.Length + 1];
                     hallways.CopyTo(halls, 0);
                     halls[halls.Length - 1] = hall;
                     connections.Remove(index);
                     connections.Add(index, halls);
+                    AddDoor(hall);
                 }
             }
             
         }
     }
+    void AddDoor(Hallways hallway) //Данный метод добавляет в список дверей данной комнаты новую дверь, ведущую в корридор
+    {
+        int x = 0, y = 0;
+        List<RectInt> hallAsRects = hallway.Get();
+        RectInt rectCrossesTheRoom = hallAsRects[hallAsRects.Count - 1]; //Учитывается только последний прямоугольник корридора, тк данный метод вызывается из метода SetConnection, который работает только с последним добавленным прямоугольником
+        bool crossesByX = (rectCrossesTheRoom.width == 1 ? true : false);
+
+        int roomScalar = (crossesByX?
+            rectCrossesTheRoom.y < transformRoom.y ? transformRoom.y : transformRoom.y + transformRoom.height 
+            : rectCrossesTheRoom.x < transformRoom.x ? transformRoom.x : transformRoom.x + transformRoom.width);
+
+        int hallwayScalar = (crossesByX? rectCrossesTheRoom.x : rectCrossesTheRoom.y);
+        x = (crossesByX ? hallwayScalar : roomScalar);
+        y = (crossesByX ? roomScalar : hallwayScalar);
+
+        doors.Add(new Vector2Int(x, y));
+    }
+    public List<Vector2Int> GetDoors() => doors;
     public RectInt GetParam(bool room = false) => (room ? transformRoom : transform);
     public void SetParam(RectInt transf, bool room = false)
     {
