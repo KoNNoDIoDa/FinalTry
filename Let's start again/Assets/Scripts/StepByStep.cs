@@ -118,13 +118,13 @@ public class StepByStep : MonoBehaviour
             bool splitH = Random.value > 0.5;
             if ((sizes.width > sizes.height && sizes.width / sizes.height >= 1) && sizes.width >= 2 * MIN) splitH = false;
             else if ((sizes.height > sizes.width && sizes.height / sizes.width >= 1) && sizes.height >= 2 * MIN) splitH = true;
-            node.SetParam(true);
+            node.SetParam();
             if (splitH)
             {
                 int split = (sizes.height > 2 * MIN ? (int) Random.Range(sizes.height * 0.4f, sizes.height * 0.6f) : MIN);
-                node.lChild.SetParam(new RectInt(sizes.x, sizes.y, sizes.width, split), false);
+                node.LChild.SetParam(new RectInt(sizes.x, sizes.y, sizes.width, split), false);
 
-                node.rChild.SetParam(new RectInt(sizes.x, sizes.y + (iterations == iteration ? split + 32 : split), sizes.width, sizes.height - split), false);
+                node.RChild.SetParam(new RectInt(sizes.x, sizes.y + (iterations == iteration ? split + 32 : split), sizes.width, sizes.height - split), false);
 
                 if(iterations == iteration)
                 {
@@ -137,9 +137,9 @@ public class StepByStep : MonoBehaviour
             else
             {
                 int split = (sizes.width > 2 * MIN ? (int) Random.Range(sizes.width*0.4f, sizes.width * 0.6f) : MIN);
-                node.lChild.SetParam(new RectInt(sizes.x, sizes.y, split, sizes.height), false);
+                node.LChild.SetParam(new RectInt(sizes.x, sizes.y, split, sizes.height), false);
 
-                node.rChild.SetParam( new RectInt(sizes.x + (iterations == iteration ? split + 32 : split), sizes.y, sizes.width - split, sizes.height), false);
+                node.RChild.SetParam( new RectInt(sizes.x + (iterations == iteration ? split + 32 : split), sizes.y, sizes.width - split, sizes.height), false);
 
                 if (iterations == iteration)
                 {
@@ -150,8 +150,8 @@ public class StepByStep : MonoBehaviour
                 }
             }
 
-            Split(iterations - 1, node.lChild);
-            Split(iterations - 1, node.rChild);
+            Split(iterations - 1, node.LChild);
+            Split(iterations - 1, node.RChild);
             
         }
         else
@@ -170,15 +170,16 @@ public class StepByStep : MonoBehaviour
         int randH = (int) (randY * Random.Range(1f, 2f));
         //randH = randH < sizes.height / 10 ? sizes.height - 2 : randH;
         node.SetParam(new RectInt(sizes.x + randX, sizes.y + randY, (sizes.width - 4 < 4 ? 4 : (sizes.width - 4 > randW ? sizes.width - randW : sizes.width - 4)), (sizes.height - 4 < 4 ? 4 : (sizes.height - 4 > randH ? sizes.height - randH : sizes.height - 4))), true);
+        //RenderRoom(node);
         
     }
     void CreateCorridors(Node node, bool sR = false)
     {
-        if (node.lChild != null)
+        if (node.LChild != null)
         {
 
-            Node left = FindLeaf(node.lChild);
-            Node right = FindLeaf(node.rChild);
+            Node left = FindLeaf(node.LChild);
+            Node right = FindLeaf(node.RChild);
 
             RectInt sizesL = left.GetParam(true);
             RectInt sizesR = right.GetParam(true);
@@ -188,7 +189,7 @@ public class StepByStep : MonoBehaviour
                 if (sizesL.x != sizesR.x)
                 {
                     Node.Hallways hallway = new Node.Hallways();
-                    hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1), nodes.IndexOf(left));
+                    hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
                     if (sR)
                     {
                         safeRoom.y = sizesL.y + sizesL.height / 2;
@@ -197,14 +198,12 @@ public class StepByStep : MonoBehaviour
                         RenderRoom(nodes[32]);
                     }
 
-                    int index = FindAllRooms(hallway);
-                    left.SetConnection(index, hallway, nodes);
-
+                    FindAllRooms(ref hallway, parent);
                 }
                 else if (sizesL.y != sizesR.y)
                 {
                     Node.Hallways hallway = new Node.Hallways();
-                    hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)), nodes.IndexOf(left));
+                    hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)));
                     if (sR)
                     {
                         safeRoom.x = sizesL.x + sizesL.width / 2;
@@ -213,23 +212,16 @@ public class StepByStep : MonoBehaviour
                         RenderRoom(nodes[32]);
                     }
 
-                    int index = FindAllRooms(hallway);
-                    left.SetConnection(index, hallway, nodes);
-
+                    FindAllRooms(ref hallway, parent);
                 }
             }
             else if ((sizesL.x + sizesL.width >= sizesR.x || sizesR.x + sizesR.width >= sizesL.x) || Random.value > 0.5 && (sizesL.y + sizesL.height < sizesR.y || sizesR.y + sizesR.height < sizesL.y))
             {
 
                 Node.Hallways hallway = new Node.Hallways();
-                hallway.Add(new RectInt(sizesL.width / 2 + sizesL.x, sizesL.height / 2 + sizesL.y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)), nodes.IndexOf(left));
-
-                int index = FindAllRooms(hallway);
-                if (index != nodes.IndexOf(left)) left.SetConnection(index, hallway, nodes);
-
+                hallway.Add(new RectInt(sizesL.width / 2 + sizesL.x, sizesL.height / 2 + sizesL.y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)));
+                FindAllRooms(ref hallway, parent);
                 List<RectInt> halls = hallway.Get();
-                hallway.Add(new RectInt(halls[0].x, halls[0].y + halls[0].height - 1, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
-
                 if (sR)
                 {
                     if (safeRoom.x == 100500) safeRoom.x = sizesL.width / 2 + sizesL.x;
@@ -239,22 +231,16 @@ public class StepByStep : MonoBehaviour
                     RenderRoom(nodes[32]);
                 }
 
-                int connection = FindAllRooms(hallway);
-                if (connection != hallway.LastIndex()) nodes[hallway.LastIndex()].SetConnection(connection, hallway, nodes);
+                hallway.Add(new RectInt(halls[0].x, halls[0].y + halls[0].height - 1, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
 
-                
+                FindAllRooms(ref hallway, parent);
             }
             else
             {
                 Node.Hallways hallway = new Node.Hallways();
-                hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1), nodes.IndexOf(left));
-
-                int index = FindAllRooms(hallway);
-                if (index != nodes.IndexOf(left)) left.SetConnection(index, hallway, nodes);
-
+                hallway.Add(new RectInt(sizesL.x + sizesL.width / 2, sizesL.y + sizesL.height / 2, -((sizesL.x + sizesL.width / 2) - (sizesR.x + sizesR.width / 2) + 1), 1));
+                FindAllRooms(ref hallway, parent);
                 List<RectInt> halls = hallway.Get();
-                hallway.Add(new RectInt(halls[0].x + halls[0].width - 1, halls[0].y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)));
-
                 if (sR)
                 {
                     if (safeRoom.x == 100500) safeRoom.x = halls[0].x + halls[0].width;
@@ -263,24 +249,21 @@ public class StepByStep : MonoBehaviour
                     nodes[32].SetParam(safeRoom, true);
                     RenderRoom(nodes[32]);
                 }
-
-                int connection = FindAllRooms(hallway);
-                if (connection != hallway.LastIndex()) nodes[hallway.LastIndex()].SetConnection(connection, hallway, nodes);
-
-                
+                hallway.Add(new RectInt(halls[0].x + halls[0].width - 1, halls[0].y, 1, -((sizesL.y + sizesL.height / 2) - (sizesR.y + sizesR.height / 2) + 1)));
+                FindAllRooms(ref hallway, parent);
             }
-            CreateCorridors(node.lChild);
-            CreateCorridors(node.rChild);
+            CreateCorridors(node.LChild);
+            CreateCorridors(node.RChild);
         }
 
     }
     Node FindLeaf(Node node)
     {
         Node leaf;
-        if (node.lChild != null)
+        if (node.LChild != null)
         {
-            if (Random.value > 0.5) leaf = FindLeaf(node.lChild);
-            else leaf = FindLeaf(node.rChild);
+            if (Random.value > 0.5) leaf = FindLeaf(node.LChild);
+            else leaf = FindLeaf(node.RChild);
         }
         else leaf = node;
 
@@ -289,15 +272,15 @@ public class StepByStep : MonoBehaviour
     Node FindLeaf(Node node, Vector2 pos)
     {
         Node leaf = null;
-        if (node.lChild != null)
+        if (node.LChild != null)
         {
-            if (pos == node.lChild)
+            if (pos == node.LChild)
             {
-                leaf = FindLeaf(node.lChild, pos);
+                leaf = FindLeaf(node.LChild, pos);
             }
-            else if (pos == node.rChild)
+            else if (pos == node.RChild)
             {
-                leaf = FindLeaf(node.rChild, pos);
+                leaf = FindLeaf(node.RChild, pos);
             }
         }
         else
@@ -306,112 +289,35 @@ public class StepByStep : MonoBehaviour
         }
         return leaf;
     }
-    int FindAllRooms(Node.Hallways hallway,  int size = -100500)
+    
+    void FindAllRooms(ref Node.Hallways hallway, Node node)
     {
-
-        List<RectInt> halls = hallway.Get();
-        RectInt theHall = halls[halls.Count - 1];
-        RectInt sizes = nodes[hallway.LastIndex()].GetParam(false);
-        int absSize;
-        if (Mathf.Abs(theHall.width) > Mathf.Abs(theHall.height))
+        List<RectInt> hallwayAsRects = hallway.Get();
+        RectInt hallAsRect = hallwayAsRects[hallwayAsRects.Count-1];
+        if (node.LChild != null)
         {
-            absSize = Mathf.Abs(theHall.width) / theHall.width;
-            if (size == -100500) size = (theHall.width > 0 ? (sizes.width + sizes.x - theHall.x) + 1 : sizes.x - theHall.x - 1);
-            if(Mathf.Abs(size) <= Mathf.Abs(theHall.width))
-            {
-                Node next = FindLeaf(parent, new Vector2(theHall.x + size, theHall.y));
-                if (next == null)
-                {
-                    next = FindLeaf(parent, new Vector2((size + (absSize * 32) + theHall.x), theHall.y));
-                    size += 32;
-                    nodes[hallway.LastIndex()].SetConnection(32, hallway, nodes);
-                    hallway.Add(32);
-                    RectInt nextSize = next.GetParam(false);
-                    if (Mathf.Abs(size + (absSize * nextSize.width)) < Mathf.Abs(theHall.width))
-                    {
-                        FindAllRooms(hallway, size + (absSize * nextSize.width));
-                    }
-                    return nodes.IndexOf(next);
-                }
-                else if (next.CrossesRoom(theHall))
-                {
-                    RectInt nextSize = next.GetParam(false);
-                    nodes[hallway.LastIndex()].SetConnection(nodes.IndexOf(next), hallway, nodes);
-                    hallway.Add(nodes.IndexOf(next));
-                    if (Mathf.Abs(size + (absSize * nextSize.width)) < Mathf.Abs(theHall.width))
-                    {
-                        FindAllRooms(hallway, size + (absSize * nextSize.width));
-                    }
-                    return nodes.IndexOf(next);
-                }
-                else return hallway.LastIndex();
-            }
-            else return hallway.LastIndex();
-        }
-        else
-        {
-            absSize = Mathf.Abs(theHall.height) / theHall.height;
-            if (size == -100500) size = (theHall.height > 0 ? (sizes.height + sizes.y - theHall.y) + 1: sizes.y - theHall.y - 1);
-            if(Mathf.Abs(size) < Mathf.Abs(theHall.height))
-            {
-                Node next = FindLeaf(parent, new Vector2(theHall.x, theHall.y + size));
-                if (next == null)
-                {
-                    next = FindLeaf(parent, new Vector2(theHall.x, (size + (absSize * 32) + theHall.y)));
-                    size += 32;
-                    nodes[hallway.LastIndex()].SetConnection(32, hallway, nodes);
-                    hallway.Add(32);
-                    RectInt nextSize = next.GetParam(false);
-                    if (Mathf.Abs(size + (absSize * nextSize.width)) < Mathf.Abs(theHall.width))
-                    {
-                        FindAllRooms(hallway, size + (absSize * nextSize.width));
-                    }
-                    return nodes.IndexOf(next);
-                }
-
-                else if (next.CrossesRoom(theHall))
-                {
-                    RectInt nextSize = next.GetParam(false);
-                    nodes[hallway.LastIndex()].SetConnection(nodes.IndexOf(next), hallway, nodes);
-                    hallway.Add(nodes.IndexOf(next));
-                    if (Mathf.Abs(size + (absSize * nextSize.height)) < Mathf.Abs(theHall.height))
-                    {
-                        FindAllRooms(hallway, size + (absSize * nextSize.height));
-                    }
-                    return nodes.IndexOf(next);
-                }
-                else return hallway.LastIndex();
-            }
-            else return hallway.LastIndex();
-        }
-    }
-    void FindAllRoomss(Node.Hallways hallway, Node node)
-    {
-        RectInt hallAsRect = hallway.GetLastHallRect();
-        if(node.lChild != null)
-        {
-            RectInt left = node.lChild.GetParam(false);
-            RectInt right = node.rChild.GetParam(true);
+            RectInt left = node.LChild.GetParam(false);
+            RectInt right = node.RChild.GetParam(false);
             bool leftIsCrossed = HallwayCrossesRect(left, hallAsRect);
             bool rightIsCrossed = HallwayCrossesRect(right, hallAsRect);
 
-            if(node == parent && leftIsCrossed && rightIsCrossed) hallway.Add(32);
-
-            if (leftIsCrossed) FindAllRoomss(hallway, node.lChild);
-            if (rightIsCrossed) FindAllRoomss(hallway, node.rChild);
+            if (leftIsCrossed) FindAllRooms(ref hallway, node.LChild);
+            if (node == parent && leftIsCrossed && rightIsCrossed) FindAllRooms(ref hallway, nodes[32]);
+            if (rightIsCrossed) FindAllRooms(ref hallway, node.RChild);
         }
         else
         {
             RectInt roomRect = node.GetParam(true);
-            if(HallwayCrossesRect(roomRect, hallAsRect)) hallway.Add(nodes.IndexOf(node));
+            if (HallwayCrossesRect(roomRect, hallAsRect)) hallway.Add(nodes.IndexOf(node));
         }
 
-        if(node == parent)
+
+        if (node == parent)
         {
             List<int> indexesOfCrossedRooms = hallway.GetIndexes();
             for(int i = 0; i < indexesOfCrossedRooms.Count; i++)
             {
-                if(i < indexesOfCrossedRooms.Count - 1)nodes[i].SetConnection(indexesOfCrossedRooms[i+1], hallway, nodes, false);
+                if(i < indexesOfCrossedRooms.Count - 1)nodes[indexesOfCrossedRooms[i]].SetConnection(indexesOfCrossedRooms[i+1], hallway, nodes, false);
             }
         }
     }
@@ -436,12 +342,14 @@ public class StepByStep : MonoBehaviour
             parallelToHallRoomSide = new Vector2Int(rect.x, rect.width);
         }
         bool positiveHallLength = longHallSide[1] > 0;
-        if (hallScalar > perpendiculToHallRoomSide[0] && hallScalar < perpendiculToHallRoomSide[1] + perpendiculToHallRoomSide[0])
+        if (hallScalar >= perpendiculToHallRoomSide[0] && hallScalar <= perpendiculToHallRoomSide[1] + perpendiculToHallRoomSide[0])
         {
-            return positiveHallLength ? (longHallSide[0] < parallelToHallRoomSide[0] + parallelToHallRoomSide[1] && longHallSide[0] + longHallSide[1] > parallelToHallRoomSide[0] + parallelToHallRoomSide[1])
-                || (longHallSide[0] < parallelToHallRoomSide[0] && longHallSide[0] + longHallSide[1] > parallelToHallRoomSide[0]) ? true : false
-                : (longHallSide[0] > parallelToHallRoomSide[0] + parallelToHallRoomSide[1] && longHallSide[0] + longHallSide[1] < parallelToHallRoomSide[0] + parallelToHallRoomSide[1])
-                || (longHallSide[0] > parallelToHallRoomSide[0] && longHallSide[0] + longHallSide[1] < parallelToHallRoomSide[0]) ? true : false; 
+            return positiveHallLength ? (longHallSide[0] <= parallelToHallRoomSide[0] + parallelToHallRoomSide[1] && longHallSide[0] + longHallSide[1] >= parallelToHallRoomSide[0] + parallelToHallRoomSide[1])
+                || (longHallSide[0] <= parallelToHallRoomSide[0] && longHallSide[0] + longHallSide[1] >= parallelToHallRoomSide[0])
+                || (longHallSide[0] >= parallelToHallRoomSide[0] && longHallSide[0] + longHallSide[1] <= parallelToHallRoomSide[0] + parallelToHallRoomSide[1]) ? true : false
+                : (longHallSide[0] >= parallelToHallRoomSide[0] + parallelToHallRoomSide[1] && longHallSide[0] + longHallSide[1] <= parallelToHallRoomSide[0] + parallelToHallRoomSide[1])
+                || (longHallSide[0] >= parallelToHallRoomSide[0] && longHallSide[0] + longHallSide[1] <= parallelToHallRoomSide[0])
+                || (longHallSide[0] <= parallelToHallRoomSide[0] + parallelToHallRoomSide[1] && longHallSide[0] + longHallSide[1] >= parallelToHallRoomSide[0]) ? true : false; 
         }
         else return false;
     }
@@ -464,7 +372,32 @@ public class StepByStep : MonoBehaviour
         {
             for (int y = roomPosition.y; y < roomPosition.height + roomPosition.y; y++)
             {
-                map.SetTile(new Vector3Int(x, y, 0), CheckTilesAround(new Vector3Int(x, y, 0)));
+                //map.SetTile(new Vector3Int(x, y, 0), CheckTilesAround(new Vector3Int(x, y, 0)));
+                Vector3Int currentTile = new Vector3Int(x, y, 0);
+                if ((x == roomPosition.x || x == roomPosition.x + roomPosition.width - 1) && y == roomPosition.y) map.SetTile(currentTile, x == roomPosition.x ? bottomLeftTile : bottomRightTile);
+                else if (x == roomPosition.x || x == roomPosition.x + roomPosition.width - 1)
+                {
+                    if (y == roomPosition.y + roomPosition.height - 1)
+                    {
+                        map.SetTile(currentTile, x == roomPosition.x ? topLeftTile : topRightTile);
+                    }
+                    else
+                    {
+                        map.SetTile(currentTile, x == roomPosition.x ? middleLeftTile : middleRightTile);
+                    }
+                }
+                else if (y == roomPosition.y || y == roomPosition.y + roomPosition.height - 1)
+                {
+                    if (x == roomPosition.x + roomPosition.width - 1)
+                    {
+                        map.SetTile(currentTile, y == roomPosition.y ? bottomRightTile : topRightTile);
+                    }
+                    else
+                    {
+                        map.SetTile(currentTile, y == roomPosition.y ? bottomMiddleTile : topMiddleTile);
+                    }
+                }
+                else map.SetTile(currentTile, middleTile);
             }
         }
     }
@@ -586,80 +519,59 @@ public class StepByStep : MonoBehaviour
 class Node
 {
     readonly Hashtable connections = new Hashtable();
-    bool isSplit = false;
+    //bool isSplit = false;
     RectInt transform;
     RectInt transformRoom;
-    List<Vector2Int> doors = new List<Vector2Int>();
+    readonly List<Vector2Int> doors = new List<Vector2Int>();
 
-    public Node lChild { get; private set; }
-    public Node rChild { get; private set; }
+    public Node LChild { get; private set; }
+    public Node RChild { get; private set; }
 
-    public bool CrossesRoom(RectInt hall)
-    {
-        if (hall.y >= transformRoom.y && hall.height == 1 && hall.y <= transformRoom.height + transformRoom.y)
-        {
-            if (hall.x >= transformRoom.x&& hall.x < transformRoom.x + transformRoom.width) return true;
-            else
-            {
-                int difference = (hall.x >= transformRoom.x) ? hall.x - transformRoom.x + transformRoom.width : hall.x - transformRoom.x;
-                if (hall.width > 0 ? hall.width - difference >= 0 : hall.width - difference <= 0) return true;
-                else return false;
-            }
-        }
-        else if (hall.x >= transformRoom.x && hall.width == 1 && hall.x <= transformRoom.width + transformRoom.x)
-        {
-            if (hall.y >= transformRoom.y && hall.y <= transformRoom.y + transformRoom.height) return true;
-            else
-            {
-                int difference = (hall.y >= transformRoom.y) ? hall.y - transformRoom.y + transformRoom.height : hall.y - transformRoom.y;
-                if (hall.height > 0 ? hall.height - difference >= 0 : hall.height - difference <= 0) return true;
-                else return false;
-            }
-        }
-        else return false;
-    }
     public Hashtable GetConnections() => connections;
-    public void SetConnection(int index, Hallways hall, List<Node> nodes = null, bool upper = false)
-    {
-        if (nodes != null)
-        {
-            RectInt neighborRoom = nodes[index].GetParam(true);
-            upper = neighborRoom.x < transformRoom.x + transformRoom.width && neighborRoom.y < transformRoom.y + transformRoom.height;
-        }
-        else upper = !upper;
-        if (!connections.ContainsKey(index))
-        {
-            Hallways[] halls = { hall };
-            connections.Add(index, halls);
-            AddDoor(hall, upper);
-
-            if (nodes != null) nodes[index].SetConnection(nodes.IndexOf(this), hall, null, upper);
-        }
-        else
-        {
-            Hallways[] hallways = (Hallways[])connections[index];
-            if(hallways.Length > 2)
+    public void SetConnection(int index, Hallways hall, List<Node> nodes = null, bool upper = false)    {
+        //if (nodes != null && index != nodes.IndexOf(this))
+        //{
+            if (nodes != null)
             {
-                List<int> indexes = hall.GetIndexes();
-                if(indexes.Count < 2)
-                {
-                    Hallways[] halls = new Hallways[hallways.Length + 1];
-                    hallways.CopyTo(halls, 0);
-                    halls[halls.Length - 1] = hall;
-                    connections.Remove(index);
-                    connections.Add(index, halls);
-                    AddDoor(hall, upper);
-                }
+                RectInt neighborRoom = nodes[index].GetParam(true);
+                upper = neighborRoom.x < transformRoom.x + transformRoom.width && neighborRoom.y < transformRoom.y + transformRoom.height;
             }
-            
-        }
+            else upper = !upper;
+            if (!connections.ContainsKey(index))
+            {
+                Hallways[] halls = { hall };
+                connections.Add(index, halls);
+                AddDoor(hall, upper);
+
+                if (nodes != null) nodes[index].SetConnection(nodes.IndexOf(this), hall, null, upper);
+            }
+            else
+            {
+                Hallways[] hallways = (Hallways[])connections[index];
+                if (hallways.Length > 2)
+                {
+                    List<int> indexes = hall.GetIndexes();
+                    //if (indexes.Count > 2)
+                    //{
+                        Hallways[] halls = new Hallways[hallways.Length + 1];
+                        hallways.CopyTo(halls, 0);
+                        halls[halls.Length - 1] = hall;
+                        connections.Remove(index);
+                        connections.Add(index, halls);
+                        AddDoor(hall, upper);
+                    //}
+                }
+
+            //}
+       }
+        
     }
     void AddDoor(Hallways hallway, bool upper) //Данный метод добавляет в список дверей данной комнаты новую дверь, ведущую в корридор
     {
-        int x = 0, y = 0;
+        int x, y;
         List<RectInt> hallAsRects = hallway.Get();
         RectInt rectCrossesTheRoom = hallAsRects[hallAsRects.Count - 1]; //Учитывается только последний прямоугольник корридора, тк данный метод вызывается из метода SetConnection, который работает только с последним добавленным прямоугольником
-        bool crossesByX = (rectCrossesTheRoom.width == 1 ? true : false);
+        bool crossesByX = rectCrossesTheRoom.width == 1;
 
         int roomScalar = (crossesByX?
             upper ? transformRoom.y : transformRoom.y + transformRoom.height - 1 
@@ -685,24 +597,17 @@ class Node
         }
 
     }
-    public void SetParam(bool split)
+    public void SetParam()
     {
-        isSplit = split;
-        lChild = new Node();
-        rChild = new Node();
+        //isSplit = split;
+        LChild = new Node();
+        RChild = new Node();
     }
     public struct Hallways
     {
         List<RectInt> halls;
         List<int> indexes;
 
-        public void Add(RectInt hall, int index)
-        {
-            if (halls == null) halls = new List<RectInt>();
-            if(indexes == null) indexes = new List<int>();
-            halls.Add(hall);
-            indexes.Add(index);
-        }
         public void Add(RectInt hall)
         {
             if (halls == null) halls = new List<RectInt>();
@@ -711,7 +616,7 @@ class Node
         public void Add(int index)
         {
             if (indexes == null) indexes = new List<int>();
-            indexes.Add(index);
+            if ((indexes.Count != 0 && indexes[indexes.Count - 1] != index) || indexes.Count == 0 ) indexes.Add(index);
         }
         public List<RectInt> Get() => halls;
         public int LastIndex() => indexes[indexes.Count - 1];
